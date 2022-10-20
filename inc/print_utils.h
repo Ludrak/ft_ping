@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <linux/icmp.h>
+#include <linux/ip.h>
 #include <netinet/in.h>
 #include <string.h>
 
@@ -17,6 +18,7 @@ void    print_binary_se(const void *const param, const size_t size);
 
 /** Print network */
 void    print_icmphdr(const struct icmphdr header);
+void    print_iphdr(const struct iphdr header);
 void    print_sockaddr_in(const struct sockaddr_in sockaddr);
 void    print_msghdr(const struct msghdr header);
 

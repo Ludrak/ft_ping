@@ -1,5 +1,5 @@
 
-#include "ping_context.h"
+#include "ping.h"
 
 typedef uint8_t bool_t;
 
@@ -12,11 +12,24 @@ void on_interrupt(int sig)
     exit (sig);
 }
 
+void construct_ping_packet()
+{
+    struct iphdr   ip_header = construct_ping_iphdr(ctx.sockaddr);
+    struct icmphdr icmp_header = construct_ping_icmphdr();
+
+    printf ("constructed icmp header:\n");
+    print_icmphdr(icmp_header);
+    printf ("constructed ip header:\n");
+    print_iphdr(ip_header);
+
+    construct_packet(ctx.packet, ip_header, icmp_header);
+}
 
 void on_alarm(int sig)
 {
     (void)sig;
-    ssize_t bytes = sendto(ctx.socket, &ctx.icmp_header, sizeof(ctx.icmp_header), 0, (struct sockaddr*)&ctx.sockaddr, sizeof(ctx.sockaddr));
+    construct_ping_packet();
+    ssize_t bytes = sendto(ctx.socket, &ctx.packet, sizeof(ctx.packet), 0, (struct sockaddr*)&ctx.sockaddr, sizeof(ctx.sockaddr));
     if (bytes < 0)
     {
         print_failed("sendto()", errno);
@@ -44,7 +57,7 @@ int main(int ac, char **av)
     signal(SIGINT, on_interrupt);
 
     // initialize ctx
-    int init_err = init_ctx(SOCK_RAW, IPPROTO_ICMP);
+    int init_err = init_ctx();
     if (init_err != 0)
         return (init_err);
     
@@ -53,8 +66,9 @@ int main(int ac, char **av)
     print_sockaddr_in(ctx.sockaddr);
 
     // setting up icmp header packet
-    init_ctx_icmp_header(ICMP_ECHO, getpid());
-    print_icmphdr(ctx.icmp_header);
+   // construct_ping_iphdr();
+   // construct_ping_icmphdr();
+   // print_icmphdr(ctx.icmp_header);
 
     
 

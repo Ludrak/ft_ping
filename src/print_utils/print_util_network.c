@@ -39,16 +39,21 @@ void    print_msghdr(const struct msghdr header)
     msg_control, header.msg_controllen, header.msg_flags, msg_iov, msg_iovlen, header.msg_iovlen, msg_name, header.msg_namelen);
 }
 
+void    print_iphdr(const struct iphdr header)
+{
+    printf("struct iphdr\n{\n    ihl = %hhu\n    version = %hhu\n    tos = %hhu\n    tot_len = %hu\n    id = %hu\n    frag_off = %hu\n    ttl = %hhu\n    protocol = %hhu\n    check = %hu\n    saddr = %x\n    daddr = %x\n}\n",
+    header.ihl, header.version, header.tos, header.tot_len, header.id, header.frag_off, header.ttl, header.protocol, header.check, header.saddr, header.daddr);
+}
 
 void    print_icmphdr(const struct icmphdr header)
 {
-    printf ("struct icmphdr\n{\n    type = %d;\n    code = %d;\n    checksum = %d;\n    un.echo.id = %d;\n    un.echo.sequence = %d;\n    un.gateway = %d;\n    un.frag.mtu = %d;\n}\n",
-    (int32_t)header.type, (int32_t)header.code, (int32_t)header.checksum, (int32_t)header.un.echo.id, (int32_t)header.un.echo.sequence, (int32_t)header.un.gateway, (int32_t)header.un.frag.mtu);
+    printf ("struct icmphdr\n{\n    type = %hhu;\n    code = %hhu;\n    checksum = %hu;\n    un.echo.id = %hu;\n    un.echo.sequence = %hu;\n    un.gateway = %u;\n    un.frag.mtu = %hu;\n}\n",
+    header.type, header.code, header.checksum, header.un.echo.id, header.un.echo.sequence, header.un.gateway, header.un.frag.mtu);
 }
 
 
 void    print_sockaddr_in(const struct sockaddr_in sockaddr)
 {
-    printf ("struct sockaddr_in\n{\n    sin_family = %d;\n    sin_port = %d;\n    sin_addr.s_addr = %#x\n    sin_zero = '%s'\n}\n",
-    (uint32_t)sockaddr.sin_family, (uint32_t)sockaddr.sin_port, (uint32_t)sockaddr.sin_addr.s_addr, sockaddr.sin_zero);
+    printf ("struct sockaddr_in\n{\n    sin_family = %hu;\n    sin_port = %hu;\n    sin_addr.s_addr = %#x\n    sin_zero = '%s'\n}\n",
+    sockaddr.sin_family, sockaddr.sin_port, sockaddr.sin_addr.s_addr, sockaddr.sin_zero);
 }
