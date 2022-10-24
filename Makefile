@@ -14,7 +14,7 @@ LIB_DIR		= lib
 # - make will check for the file in SRC_DIR
 # - use "-" if empty
 SRCS=				main.c context.c packet.c checksum.c \
-					print_util.c print_util_network.c
+					net_utils.c time_utils.c print_util.c print_util_network.c\
 
 # Librarys (only for local archives in project folder)
 LIBRARYS	= 

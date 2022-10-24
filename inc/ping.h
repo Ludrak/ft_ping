@@ -15,21 +15,23 @@
 #include <linux/icmp.h>
 #include <linux/ip.h>
 #include <signal.h>
-#include "net_types.h"
+#include <sys/time.h>
+#include <time.h>
+
+#include "net_utils.h"
 #include "print_utils.h"
 #include "packet.h"
 
 typedef struct  s_ping_ctx
 {
     socket_t    socket;
-    struct sockaddr_in sockaddr;
+    struct sockaddr_in *sockaddr;
 
-    packet_t    packet;
+    ping_packet_t packet;
 }               ping_ctx_t;
 
 extern ping_ctx_t ctx;
 
-int  init_ctx(void);
-void init_ctx_addr(const sa_family_t family, const string_address_t address);
-
+int  init_ctx(const string_hostname_t hostname);
+void destroy_ctx();
 #endif //PING_H

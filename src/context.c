@@ -3,7 +3,7 @@
 
 extern ping_ctx_t ctx;
 
-int init_ctx(void)
+int init_ctx(const string_hostname_t hostname)
 {
     bzero(&ctx, sizeof(ctx));
 
@@ -12,14 +12,18 @@ int init_ctx(void)
     if (ctx.socket <= 0)
        return (print_failed("socket()", errno));
 
+    // setting opt ?
     int send_buffer_size = 98304;
     if (setsockopt(ctx.socket, SOL_SOCKET, SO_RCVBUF, &send_buffer_size, sizeof(send_buffer_size)) != 0)
         return (print_failed("setsockopt(SO_RCVBUF)", errno));
+        
+    ctx.sockaddr = resolve_address(hostname);
+    if (ctx.sockaddr == NULL)
+        return (1);
     return (0);
 }
 
-void init_ctx_addr(const sa_family_t family, const string_address_t address)
+void destroy_ctx()
 {
-    ctx.sockaddr.sin_family = family;
-    inet_aton(address, &ctx.sockaddr.sin_addr);
+    free(ctx.sockaddr);
 }
