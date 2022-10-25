@@ -6,15 +6,18 @@
 #define MAX_MSG_NAME_SZ    1024
 void    print_struct_msghdr(const struct msghdr header)
 {
-    char   msg_control[MAX_MSG_NAME_SZ];
-    bzero(msg_control, MAX_MSG_NAME_SZ);
+    char   msg_control[MAX_MSG_CONTROL_SZ];
+    bzero(msg_control, MAX_MSG_CONTROL_SZ);
+    strcpy(msg_control, "null");
 
-    char   msg_iov[MAX_MSG_NAME_SZ];
+    char   msg_iov[MAX_MSG_IOV_SZ];
     size_t msg_iovlen = 0;
-    bzero(msg_iov, MAX_MSG_NAME_SZ);
+    bzero(msg_iov, MAX_MSG_IOV_SZ);
+    strcpy(msg_iov, "null");
 
     char   msg_name[MAX_MSG_NAME_SZ];
     bzero(msg_name, MAX_MSG_NAME_SZ);
+    strcpy(msg_name, "null");
 
     // check for msg_control
     if (header.msg_controllen > 0 && header.msg_control)

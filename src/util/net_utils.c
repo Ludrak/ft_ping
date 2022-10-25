@@ -29,11 +29,11 @@ struct sockaddr_in  *resolve_address(const string_hostname_t host)
     return (NULL);
 }
 
-string_hostname_t   resolve_hostname(const struct sockaddr_in* address)
+string_hostname_t   resolve_hostname(const struct sockaddr_in address)
 {
     char host_buffer[MAX_HOSTNAME_SIZE_4];
     bzero(host_buffer, MAX_HOSTNAME_SIZE_4);
-    if (inet_ntop(address->sin_family, &address->sin_addr.s_addr, host_buffer, MAX_HOSTNAME_SIZE_4) == NULL)
+    if (inet_ntop(address.sin_family, &address.sin_addr.s_addr, host_buffer, MAX_HOSTNAME_SIZE_4) == NULL)
     {
         print_failed("inet_ntop()", errno);
         return (NULL);

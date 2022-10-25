@@ -24,12 +24,14 @@ typedef struct  ping_packet
     struct timeval time;
 }               ping_packet_t;
 
-size_t  construct_ping_packet(ping_packet_t *const pk, const struct iphdr ip_header, const struct icmphdr icmp_header, const struct timeval time_data);
+size_t  construct_ping_packet(ping_packet_t *const pk, const struct iphdr ip_header, const struct icmphdr icmp_header);
 ssize_t construct_ping_packet_from_data(ping_packet_t *const pk, const void *const data, const size_t data_size);
+
+size_t  write_ping_packet_time(ping_packet_t *const pk);
 
 struct icmphdr construct_ping_icmphdr(void);
 struct iphdr   construct_ping_iphdr(const struct sockaddr_in dest_address);
 
-int32_t checksum(const uint16_t *buff, const size_t size);
+uint16_t checksum(const uint16_t *buff, const size_t size);
 
 #endif

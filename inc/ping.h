@@ -18,9 +18,22 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "time_utils.h"
 #include "net_utils.h"
 #include "print_utils.h"
 #include "packet.h"
+
+
+typedef struct s_ping_stats
+{
+    string_hostname_t  host_addr;
+
+    uint16_t   n_packet_send;
+    uint16_t   n_packet_recv;
+
+    time_list_t  *packets_rtt;
+}              ping_stats_t;
+
 
 typedef struct  s_ping_ctx
 {
@@ -28,10 +41,17 @@ typedef struct  s_ping_ctx
     struct sockaddr_in *sockaddr;
 
     ping_packet_t packet;
+
+    ping_stats_t  stats;
 }               ping_ctx_t;
+
+
+
 
 extern ping_ctx_t ctx;
 
 int  init_ctx(const string_hostname_t hostname);
+int  ctx_add_package_stat(const time_t rtt);
 void destroy_ctx();
+
 #endif //PING_H

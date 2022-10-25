@@ -1,6 +1,7 @@
 #include "packet.h"
- 
-int32_t checksum(const uint16_t *buff, const size_t size)
+#include "print_utils.h"
+
+uint16_t checksum(const uint16_t *buff, const size_t size)
 {
     int32_t sum = 0;
     size_t  i = size;
@@ -14,13 +15,17 @@ int32_t checksum(const uint16_t *buff, const size_t size)
 
     /* if there is an odd number of bytes add it */
     if (i == 1)
-        sum += *(uint8_t*)buff;
+    {
+        sum += *(uint8_t*)buff >> 16;
+    }
 
     /* sum 16 higher bytes w/ 16 lower */
     sum = (sum >> 16) + (sum & 0xFFFF);
+
     /* add carry if not 0 */
     sum += sum >> 16;
-    return (~sum);
+
+    return ((uint16_t)~sum);
 }
 
 
