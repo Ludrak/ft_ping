@@ -19,7 +19,7 @@ SRCS=				main.c context.c packet.c checksum.c \
 # Librarys (only for local archives in project folder)
 LIBRARYS	= 
 
-CLANG		=	clang
+CLANG		=	gcc
 CPP_FLAGS	=	-Wextra -Wall -Werror #-g3 -fsanitize=address
 CPP_IFLAGS	=	
 

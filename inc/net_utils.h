@@ -30,9 +30,9 @@ typedef char*       string_hostname_t;
 
 /* respectivly returns allocated struct sockaddr_in and char * containing the address or hostname requested  */
 /* the given result MUST be freed after utilisation                                                          */
-struct sockaddr_in  *resolve_address(const string_hostname_t hostname);
-string_hostname_t   resolve_hostname(const struct sockaddr_in address);
+struct sockaddr_in  *resolve_address(const string_hostname_t hostname, int options);
+string_hostname_t   resolve_hostname(const struct sockaddr_in address, int options);
 
-string_hostname_t   resolve_address_from_int(const sa_family_t address_family, const uint32_t address);
+string_hostname_t   resolve_address_from_int(const sa_family_t address_family, const uint32_t address, int options);
 
 #endif

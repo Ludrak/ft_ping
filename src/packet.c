@@ -57,6 +57,6 @@ struct icmphdr construct_ping_icmphdr(void)
         .un.echo.sequence = sequence_count,
     };
     ++sequence_count;
-    header.checksum = checksum((uint16_t *)&header, sizeof(header));
+   // header.checksum = checksum((uint16_t *)&header, sizeof(header));
     return (header);
 }

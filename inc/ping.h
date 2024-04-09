@@ -23,6 +23,9 @@
 #include "print_utils.h"
 #include "packet.h"
 
+#define OPT_USAGE   0b0001
+#define OPT_VERBOSE 0b0010
+
 
 typedef struct s_ping_stats
 {
@@ -50,7 +53,7 @@ typedef struct  s_ping_ctx
 
 extern ping_ctx_t ctx;
 
-int  init_ctx(const string_hostname_t hostname);
+int  init_ctx(const string_hostname_t hostname, int options);
 int  ctx_add_package_stat(const time_t rtt);
 void destroy_ctx();
 

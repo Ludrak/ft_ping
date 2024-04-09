@@ -51,8 +51,16 @@ void on_alarm(int sig)
     construct_packet();
     write_ping_packet_time(&ctx.packet);
 
+    //ctx.packet.icmp.checksum = checksum((uint16_t*)(&ctx.packet.icmp - &ctx.packet), sizeof(struct icmphdr) + sizeof(struct timeval));
+
+    uint16_t packet[64];
+    memset(packet, 0x42, sizeof(packet));
+    memcpy(packet, &ctx.packet, sizeof(ctx.packet)); 
+
+    packet[(uint8_t*)&ctx.packet.icmp.checksum - (uint8_t*)&ctx.packet] = checksum((uint16_t*)((uint8_t*)&ctx.packet.icmp - (uint8_t*)&ctx.packet), 64 - sizeof(struct iphdr));
+
     // printf ("sending ping of %lu bytes\n", sizeof(ctx.packet));
-    ssize_t bytes = sendto(ctx.socket, &ctx.packet, sizeof(ctx.packet), 0, SOCKADDR(ctx.sockaddr), sizeof(*ctx.sockaddr));
+    ssize_t bytes = sendto(ctx.socket, &packet, sizeof(packet), 0, SOCKADDR(ctx.sockaddr), sizeof(*ctx.sockaddr));
     if (bytes < 0)
     {
         print_failed("sendto()", errno);
@@ -242,37 +250,77 @@ int    get_packet_error(ping_packet_t pk, char *err_buffer)
 
 
 
-int main(int ac, char **av)
+int get_options(int ac, char **av)
 {
-    if (ac < 2)
+    int i;
+    int j;
+    int options;
+
+    i = 1;
+    options = 0;
+    while (i < ac)
     {
-        fprintf (stderr, "not enought parameters, expected: ft_ping <address>\n");
-        return (1);
+        if (*av[i] == '-')
+        {
+            j = 1;
+            while (av[i][j])
+            {
+                switch (av[i][j])
+                {
+                    case 'v':
+                        options |= OPT_VERBOSE;
+                        break;
+                    case '?':
+                        options |= OPT_USAGE;
+                        break;
+                    default:
+                        dprintf(2, "%s: invalid option -- '%c'\n", av[0], av[i][j]);
+                        dprintf(2, "Try '%s -?' for more informations\n", av[0]);
+                        return (-1);
+                }
+                ++j;
+            }
+        }
+        ++i;
     }
+    return (options);
+}
 
-    if (getuid() != 0)
-    {
-        fprintf (stderr, "this program must be run as root\n");
-        return (1);
-    }
 
-    string_hostname_t ping_hostname = av[1];
 
-    // setting up signals handlers
-    signal(SIGALRM, on_alarm);
-    signal(SIGINT, on_interrupt);
+int print_usage(char *pname)
+{
+    printf("Usage: %s [OPTION...] HOST ...\n\
+Send ICMP ECHO_REQUEST packets to network hosts.\n\
+\n\
+ Options valid for all request types:\n\
+  -v                         verbose output\n\
+\n\
+ Options valid for --echo requests:\n\
+  -?                         give this help list\n\
+\n\
+Mandatory or optional arguments to long options are also mandatory or optional\n\
+for any corresponding short options.\n\
+\n\
+Options marked with (root only) are available only to superuser.\n", pname);
+    return (0);
+}
+
+
+
+int ping(string_hostname_t host, int options)
+{
 
     // initialize ctx (socket and address)
-    int init_err = init_ctx(ping_hostname);
+    int init_err = init_ctx(host, options);
     if (init_err != 0)
         return (init_err);
     
-    printf ("PING %s (%s): %lu data bytes\n", ping_hostname, ctx.stats.host_addr, sizeof(ping_packet_t) - (sizeof(struct iphdr) + sizeof(struct icmphdr)));
+    printf ("PING %s (%s): %lu data bytes\n", host, ctx.stats.host_addr, 8 + sizeof(ping_packet_t));
 
     // calling alarm handler for no-delay 1st packet send
     on_alarm(0);
    
-
 
     // recieve loop
     while (1)
@@ -298,7 +346,8 @@ int main(int ac, char **av)
         ssize_t received_bytes = recvmsg(ctx.socket, &received_message, 0); 
         if (received_bytes < 0)
         {
-            print_failed("recvmsg()", errno);
+            if (options & OPT_VERBOSE)
+                print_failed("recvmsg()", errno);
             destroy_ctx();
             return 1;
         }
@@ -320,14 +369,15 @@ int main(int ac, char **av)
         int err = get_packet_error(received_packet, (char*)&err_message);
         if (err != 0)
         {
-            printf ("error occured: %s\n", err_message);
+            if (options & OPT_VERBOSE)
+                printf ("error occured: %s\n", err_message);
             alarm(1);
             continue ;
         }
 
 
         // TODO retrieve from received_message
-        char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr);//ctx.sockaddr->sin_family, );
+        char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);//ctx.sockaddr->sin_family, );
     
         // Print ping infos
         printf ("%zu bytes from %s: icmp_seq=%d ttl=%d time=%.3fms\n",
@@ -342,4 +392,55 @@ int main(int ac, char **av)
         // sending next ping through alarm handler
         alarm(1);
     }
+
+    return (0);
+}
+
+
+int get_host_arg(int ac, char **av)
+{
+    int i;
+
+    i = 1;
+    while (i < ac)
+    {
+        if (*av[i] != '-')
+            return (i);
+    }
+    return (-1);
+}
+
+
+int main(int ac, char **av)
+{
+    if (ac < 2)
+    {
+        fprintf (stderr, "not enought parameters, expected: ft_ping [-v] <address>\n");
+        return (1);
+    }
+
+    if (getuid() != 0)
+    {
+        fprintf (stderr, "this program must be run as root\n");
+        return (1);
+    }
+
+    int options = get_options(ac, av);
+    if (options < 0)
+        return (1);
+
+    if (options & OPT_USAGE)
+        return (print_usage(av[0]));
+
+    // setting up signals handlers
+    signal(SIGALRM, on_alarm);
+    signal(SIGINT, on_interrupt);
+
+    int host_idx = get_host_arg(ac, av);
+    if (host_idx < 0)
+    {
+        fprintf(stderr, "%s: missing host operand\n", av[0]);
+        fprintf(stderr, "Try '%s -?' for more informations\n", av[0]);\
+    }
+    return (ping(av[get_host_arg(ac, av)], options));
 }
