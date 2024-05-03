@@ -16,7 +16,7 @@ struct sockaddr_in  *resolve_address(const string_hostname_t host, int options)
     int err = getaddrinfo(host, 0, &hints, &result);
     if (err != 0) {
         if (options & OPT_VERBOSE)
-            fprintf(stderr, "getaddrinfo(): %d: %s\n", err, gai_strerror(err));
+            fprintf(stderr, "getaddrinfo(): %s: %d: %s\n", host, err, gai_strerror(err));
         freeaddrinfo(result);
         return (NULL);
     }

@@ -22,10 +22,7 @@
 #include "net_utils.h"
 #include "print_utils.h"
 #include "packet.h"
-
-#define OPT_USAGE   0b0001
-#define OPT_VERBOSE 0b0010
-
+#include "options.h"
 
 typedef struct s_ping_stats
 {

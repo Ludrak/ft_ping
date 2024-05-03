@@ -4,6 +4,8 @@
 
 ping_ctx_t ctx;
 
+
+
 void on_interrupt(int sig)
 {
     printf("--- %s ping statistics ---\n", ctx.stats.host_addr);
@@ -37,6 +39,9 @@ void on_interrupt(int sig)
     exit (sig);
 }
 
+
+
+
 size_t  construct_packet()
 {
     struct iphdr   ip_header = construct_ping_iphdr(*ctx.sockaddr);
@@ -45,22 +50,25 @@ size_t  construct_packet()
     return (construct_ping_packet(&ctx.packet, ip_header, icmp_header));
 }
 
+
+
+
 void on_alarm(int sig)
 {
     (void)sig;
     construct_packet();
     write_ping_packet_time(&ctx.packet);
 
-    //ctx.packet.icmp.checksum = checksum((uint16_t*)(&ctx.packet.icmp - &ctx.packet), sizeof(struct icmphdr) + sizeof(struct timeval));
+    memset(&ctx.packet.data, '\0', sizeof(ctx.packet.data));
+    ctx.packet.icmp.checksum = checksum((uint16_t*)&ctx.packet.icmp, sizeof(struct icmphdr) + sizeof(struct timeval) + sizeof(char) * 16);
 
-    uint16_t packet[64];
-    memset(packet, 0x42, sizeof(packet));
-    memcpy(packet, &ctx.packet, sizeof(ctx.packet)); 
+    // uint16_t packet[64];
+    // memset(packet, 0x42, sizeof(packet));
+    // memcpy(packet, &ctx.packet, sizeof(ctx.packet)); 
 
-    packet[(uint8_t*)&ctx.packet.icmp.checksum - (uint8_t*)&ctx.packet] = checksum((uint16_t*)((uint8_t*)&ctx.packet.icmp - (uint8_t*)&ctx.packet), 64 - sizeof(struct iphdr));
+    // packet[(uint8_t*)&ctx.packet.icmp.checksum - (uint8_t*)&ctx.packet] = checksum((uint16_t*)((uint8_t*)&ctx.packet.icmp - (uint8_t*)&ctx.packet), 64 - sizeof(struct iphdr));
 
-    // printf ("sending ping of %lu bytes\n", sizeof(ctx.packet));
-    ssize_t bytes = sendto(ctx.socket, &packet, sizeof(packet), 0, SOCKADDR(ctx.sockaddr), sizeof(*ctx.sockaddr));
+    ssize_t bytes = sendto(ctx.socket, &ctx.packet, sizeof(ctx.packet), 0, SOCKADDR(ctx.sockaddr), sizeof(*ctx.sockaddr));
     if (bytes < 0)
     {
         print_failed("sendto()", errno);
@@ -70,241 +78,6 @@ void on_alarm(int sig)
 }
 
 
-// err_buffer must be a 128 byte string
-int    get_packet_error(ping_packet_t pk, char *err_buffer)
-{
-    switch (pk.icmp.type)
-    {
-        case ICMP_ECHOREPLY: // echo reply
-            return (0);
-
-        case ICMP_DEST_UNREACH: // destination unreachable
-            switch (pk.icmp.code)
-            {
-                case ICMP_NET_UNREACH: // destination network unreachable
-                    strcpy(err_buffer, "destination unreachable: destination network unreachable");
-                    break;
-                case ICMP_HOST_UNREACH: // destination host unreachable
-                    strcpy(err_buffer, "destination unreachable: destination host unreachable");
-                    break;
-                case ICMP_PROT_UNREACH: // destination protocol unreachable
-                    strcpy(err_buffer, "destination unreachable: destination protocol unreachable");
-                    break;
-                case ICMP_PORT_UNREACH: // destination port unreachable
-                    strcpy(err_buffer, "destination unreachable: destination port unreachable");
-                    break;
-                case ICMP_FRAG_NEEDED: // fragmentation required and df set
-                    strcpy(err_buffer, "destination unreachable: fragmentation required and df set");
-                    break;
-                case ICMP_SR_FAILED: // source route failed
-                    strcpy(err_buffer, "destination unreachable: source route failed");
-                    break;
-                case ICMP_NET_UNKNOWN: // destination network unknown
-                    strcpy(err_buffer, "destination unreachable: destination network unknown");
-                    break;
-                case ICMP_HOST_UNKNOWN: // destination host unknown
-                    strcpy(err_buffer, "destination unreachable: destination host unknown");
-                    break;
-                case ICMP_HOST_ISOLATED: // source host isolated
-                    strcpy(err_buffer, "destination unreachable: source host isolated");
-                    break;
-                case ICMP_NET_ANO: // Network administratively prohibited
-                    strcpy(err_buffer, "destination unreachable: Network administratively prohibited");
-                    break;
-                case ICMP_HOST_ANO: // Host administratively prohibited
-                    strcpy(err_buffer, "destination unreachable: Host administratively prohibited");
-                    break;
-                case ICMP_NET_UNR_TOS: // Network unreachable for Type Of Service
-                    strcpy(err_buffer, "destination unreachable: Network unreachable for Type Of Service");
-                    break;
-                case ICMP_HOST_UNR_TOS: // Host unreachable for Type of Service
-                    strcpy(err_buffer, "destination unreachable: Host unreachable for Type Of Service");
-                    break;
-                case ICMP_PKT_FILTERED: // Administratively prohibited
-                    strcpy(err_buffer, "destination unreachable: Administratively prohibited");
-                    break;
-                case ICMP_PREC_VIOLATION: // precedence violation
-                    strcpy(err_buffer, "destination unreachable: precedence violation");
-                    break;
-                case ICMP_PREC_CUTOFF: // precedence cut off
-                    strcpy(err_buffer, "destination unreachable: precedence cut off");
-                    break;
-                default:
-                    strcpy(err_buffer, "destination unreachable: unknown error");
-                    break;
-            }
-            return (ICMP_DEST_UNREACH);
-        
-        case ICMP_SOURCE_QUENCH: // source quench | traffic congestion controll
-            return (ICMP_SOURCE_QUENCH);
-        
-        case ICMP_REDIRECT: // redirect message
-            switch (pk.icmp.code)
-            {
-                case 0: // 	Redirect Datagram for the Network
-                    break;
-                case 1: //	Redirect Datagram for the Host
-                    break;
-                case 2: //	Redirect Datagram for the Type of Service & network
-                    break;
-                case 3: //	Redirect Datagram for the Type of Service & host
-                    break;
-                default:
-                    break;
-            }
-            return (ICMP_REDIRECT);
-        
-        case 6: // Alternate host address
-            return (6);
-        
-        case ICMP_ECHO: // echo request
-            return (0);
-        
-        case 9: // router advertisement
-            break;
-    
-        case 10: // router solicitation
-            break;
-        
-        case ICMP_TIME_EXCEEDED: // time exceeded
-            switch (pk.icmp.code)
-            {
-                case 0: // TTL exceeded
-                    break;
-                case 1: // Fragment reassembly time exceeded
-                    break;
-                default:
-                    break;
-            }
-            return (ICMP_TIME_EXCEEDED);
-        
-        case ICMP_PARAMETERPROB: // parameter problem
-            switch (pk.icmp.code)
-            {
-                case 0: // Pointer indicates the error
-                    strcpy(err_buffer, "parameter problem: pointer indicates the error");
-                    break;
-                case 1: // Missing a required option
-                    strcpy(err_buffer, "parameter problem: missing a required option");
-                    break;
-                case 2: // Bad length
-                    strcpy(err_buffer, "parameter problem: bad length");
-                    break;
-                default:
-                    strcpy(err_buffer, "parameter problem: unknown error");
-                    break;
-            }
-            return (ICMP_PARAMETERPROB);
-        
-        case ICMP_TIMESTAMP: // timestamp request
-            break;
-        
-        case ICMP_TIMESTAMPREPLY: // timestamp reply
-            break;
-        
-        case ICMP_INFO_REQUEST: // information request
-            break;
-        
-        case ICMP_INFO_REPLY: // information_reply
-            break;
-    
-        case ICMP_ADDRESS: // address mask request
-            break;
-        
-        case ICMP_ADDRESSREPLY: // address mask reply
-            break;
-        
-        case 30: // information request (traceroute)
-            break;
-
-        case 31: // datagram conversion error
-            break;
-        
-        case 32: // mobile host redirect
-            break;
-        
-        case 33: // where are you
-            break;
-
-        case 34: // here i am
-            break;
-
-        case 35: // mobile registration request
-            break;
-        
-        case 36: // mobile registration reply
-            break;
-        
-        case 37: // DNS request
-            break;
-        
-        case 38: // DNS reply
-            break;
-        
-        default: // reserved
-            break;
-    }
-    printf("ICMP get_error: type out of bounds: %d (code: %d)\n", pk.icmp.type, pk.icmp.code);
-    return (1);
-}
-
-
-
-int get_options(int ac, char **av)
-{
-    int i;
-    int j;
-    int options;
-
-    i = 1;
-    options = 0;
-    while (i < ac)
-    {
-        if (*av[i] == '-')
-        {
-            j = 1;
-            while (av[i][j])
-            {
-                switch (av[i][j])
-                {
-                    case 'v':
-                        options |= OPT_VERBOSE;
-                        break;
-                    case '?':
-                        options |= OPT_USAGE;
-                        break;
-                    default:
-                        dprintf(2, "%s: invalid option -- '%c'\n", av[0], av[i][j]);
-                        dprintf(2, "Try '%s -?' for more informations\n", av[0]);
-                        return (-1);
-                }
-                ++j;
-            }
-        }
-        ++i;
-    }
-    return (options);
-}
-
-
-
-int print_usage(char *pname)
-{
-    printf("Usage: %s [OPTION...] HOST ...\n\
-Send ICMP ECHO_REQUEST packets to network hosts.\n\
-\n\
- Options valid for all request types:\n\
-  -v                         verbose output\n\
-\n\
- Options valid for --echo requests:\n\
-  -?                         give this help list\n\
-\n\
-Mandatory or optional arguments to long options are also mandatory or optional\n\
-for any corresponding short options.\n\
-\n\
-Options marked with (root only) are available only to superuser.\n", pname);
-    return (0);
-}
 
 
 
@@ -316,7 +89,7 @@ int ping(string_hostname_t host, int options)
     if (init_err != 0)
         return (init_err);
     
-    printf ("PING %s (%s): %lu data bytes\n", host, ctx.stats.host_addr, 8 + sizeof(ping_packet_t));
+    printf ("PING %s (%s): %lu data bytes\n", host, ctx.stats.host_addr, sizeof(ping_packet_t) - 8);
 
     // calling alarm handler for no-delay 1st packet send
     on_alarm(0);
@@ -397,25 +170,15 @@ int ping(string_hostname_t host, int options)
 }
 
 
-int get_host_arg(int ac, char **av)
-{
-    int i;
 
-    i = 1;
-    while (i < ac)
-    {
-        if (*av[i] != '-')
-            return (i);
-    }
-    return (-1);
-}
+
 
 
 int main(int ac, char **av)
 {
     if (ac < 2)
     {
-        fprintf (stderr, "not enought parameters, expected: ft_ping [-v] <address>\n");
+        fprintf (stderr, "not enought parameters, expected: ft_ping [-v?] <address>\n");
         return (1);
     }
 
@@ -442,5 +205,5 @@ int main(int ac, char **av)
         fprintf(stderr, "%s: missing host operand\n", av[0]);
         fprintf(stderr, "Try '%s -?' for more informations\n", av[0]);\
     }
-    return (ping(av[get_host_arg(ac, av)], options));
+    return (ping(av[host_idx], options));
 }
