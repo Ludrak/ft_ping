@@ -18,7 +18,8 @@
 #include "print_utils.h"
 
 
-#define MAX_HOSTNAME_SIZE_4 15
+#define MAX_HOSTNAME_SIZE_4 32
+//15
 
 #define SOCKADDR(sock_addr_in)      ((struct sockaddr *)sock_addr_in)
 #define SOCKADDR_IN(sock_addr)      ((struct sockaddr_in *)sock_addr)
