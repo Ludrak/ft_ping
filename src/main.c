@@ -1,6 +1,7 @@
 
 #include "ping.h"
 #include "time_utils.h"
+#include <math.h>
 
 ping_ctx_t ctx;
 
@@ -17,6 +18,7 @@ void on_interrupt(int sig)
     float min_rtt = __FLT_MAX__;
     float max_rtt = -1;
     float avg_rtt = 0;
+    float sqr_avg_rtt = 0;
     float stddev_rtt =  0; // TODO
     struct s_time_list* t = ctx.stats.packets_rtt;
     if (t != NULL)
@@ -28,11 +30,14 @@ void on_interrupt(int sig)
             if (t->time > max_rtt)
                 max_rtt = t->time;
             avg_rtt += (t->time / 1000.0f);
+            sqr_avg_rtt += (t->time / 1000.0f) * (t->time / 1000.0f);
             t = t->next;
         }
         avg_rtt /= ctx.stats.n_packet_recv;
+        sqr_avg_rtt /= ctx.stats.n_packet_recv;
         min_rtt /= 1000.0f;
         max_rtt /= 1000.0f;
+        stddev_rtt = sqrtf(sqr_avg_rtt - (avg_rtt * avg_rtt));
         printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", min_rtt, avg_rtt, max_rtt, stddev_rtt);
     }
     destroy_ctx();
@@ -60,7 +65,7 @@ void on_alarm(int sig)
     write_ping_packet_time(&ctx.packet);
 
     memset(&ctx.packet.data, '*', sizeof(ctx.packet.data));
-    ctx.packet.icmp.checksum = checksum((uint16_t*)&ctx.packet.icmp, sizeof(struct icmphdr) + sizeof(struct timeval) + sizeof(ctx.packet.data));
+    ctx.packet.icmp.checksum = checksum((uint16_t*)&ctx.packet.icmp, sizeof(ctx.packet) - sizeof(struct iphdr));
 
     ssize_t bytes = sendto(ctx.socket, &ctx.packet, sizeof(ctx.packet), 0, SOCKADDR(ctx.sockaddr), sizeof(*ctx.sockaddr));
     if (bytes < 0)
@@ -195,7 +200,8 @@ int main(int ac, char **av)
     if (host_idx < 0)
     {
         fprintf(stderr, "%s: missing host operand\n", av[0]);
-        fprintf(stderr, "Try '%s -?' for more informations\n", av[0]);\
+        fprintf(stderr, "Try '%s -?' for more informations\n", av[0]);
+        return (1);
     }
     return (ping(av[host_idx], options));
 }

@@ -23,7 +23,7 @@ CLANG		=	gcc
 CPP_FLAGS	=	-Wextra -Wall -Werror #-g3 -fsanitize=address
 CPP_IFLAGS	=	
 
-CPP_LFLAGS	= 
+CPP_LFLAGS	= -lm
 
 # Fancy prefixes 
 PREFIX_PROJECT=[\033[1;32m$(NAME)\033[0m]

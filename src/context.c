@@ -36,7 +36,7 @@ int init_ctx(const string_hostname_t hostname, int options)
     ctx.sockaddr = resolve_address(hostname, options);
     if (ctx.sockaddr == NULL)
     {
-        printf ("ft_ping: unable to resolve address\n");
+        printf ("ft_ping: cannot resolve address\n");
         return (1);
     }
 

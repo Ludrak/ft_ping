@@ -67,7 +67,7 @@ int get_host_arg(int ac, char **av)
     i = 1;
     while (i < ac)
     {
-        if (*av[i] != '-')
+        if (*av[i] != '-' || *(av[i] + 1) == '\0')
             return (i);
         ++i;
     }
