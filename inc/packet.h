@@ -17,6 +17,7 @@
 
 typedef uint8_t  packet_t[MAX_PACKET_SIZE];
 
+
 typedef struct  ping_packet
 {
     // Headers
@@ -24,9 +25,10 @@ typedef struct  ping_packet
     struct icmphdr icmp;
     // Time Data
     struct timeval time;
+
     // Data
-    char            data[16];
-}               ping_packet_t;
+    uint8_t        data[40];
+} __attribute__((packed, aligned(4))) ping_packet_t;
 
 
 size_t  construct_ping_packet(ping_packet_t *const pk, const struct iphdr ip_header, const struct icmphdr icmp_header);

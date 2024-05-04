@@ -59,14 +59,8 @@ void on_alarm(int sig)
     construct_packet();
     write_ping_packet_time(&ctx.packet);
 
-    memset(&ctx.packet.data, '\0', sizeof(ctx.packet.data));
-    ctx.packet.icmp.checksum = checksum((uint16_t*)&ctx.packet.icmp, sizeof(struct icmphdr) + sizeof(struct timeval) + sizeof(char) * 16);
-
-    // uint16_t packet[64];
-    // memset(packet, 0x42, sizeof(packet));
-    // memcpy(packet, &ctx.packet, sizeof(ctx.packet)); 
-
-    // packet[(uint8_t*)&ctx.packet.icmp.checksum - (uint8_t*)&ctx.packet] = checksum((uint16_t*)((uint8_t*)&ctx.packet.icmp - (uint8_t*)&ctx.packet), 64 - sizeof(struct iphdr));
+    memset(&ctx.packet.data, '*', sizeof(ctx.packet.data));
+    ctx.packet.icmp.checksum = checksum((uint16_t*)&ctx.packet.icmp, sizeof(struct icmphdr) + sizeof(struct timeval) + sizeof(ctx.packet.data));
 
     ssize_t bytes = sendto(ctx.socket, &ctx.packet, sizeof(ctx.packet), 0, SOCKADDR(ctx.sockaddr), sizeof(*ctx.sockaddr));
     if (bytes < 0)
@@ -89,11 +83,10 @@ int ping(string_hostname_t host, int options)
     if (init_err != 0)
         return (init_err);
     
-    printf ("PING %s (%s): %lu data bytes\n", host, ctx.stats.host_addr, sizeof(ping_packet_t) - 8);
+    printf ("PING %s (%s): %lu data bytes\n", host, ctx.stats.host_addr, sizeof(ctx.packet) - sizeof(struct iphdr) - sizeof(struct icmphdr));
 
-    // calling alarm handler for no-delay 1st packet send
+    // calling alarm handler for 1st packet send
     on_alarm(0);
-   
 
     // recieve loop
     while (1)
@@ -133,7 +126,7 @@ int ping(string_hostname_t host, int options)
         construct_ping_packet_from_data(&received_packet, received_message.msg_iov->iov_base, sizeof(ping_packet_t));
 
         // add time difference data
-        time_t time_difference = get_difference_time(received_packet.time, now);
+        time_t time_difference = get_difference_timeval(received_packet.time, now);
         ctx_add_package_stat(time_difference);
 
         // check for errors in packet
@@ -148,13 +141,12 @@ int ping(string_hostname_t host, int options)
             continue ;
         }
 
-
-        // TODO retrieve from received_message
-        char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);//ctx.sockaddr->sin_family, );
+        // resolving host
+        char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);
     
         // Print ping infos
         printf ("%zu bytes from %s: icmp_seq=%d ttl=%d time=%.3fms\n",
-            received_bytes,
+            received_bytes - sizeof(struct iphdr),
             resolved_hostname,
             received_packet.icmp.un.echo.sequence, 
             received_packet.ip.ttl,

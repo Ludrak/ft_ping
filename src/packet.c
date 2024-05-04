@@ -1,5 +1,6 @@
 
 #include "packet.h"
+#include "time_utils.h"
 
 size_t   construct_ping_packet(ping_packet_t *const pk, const struct iphdr ip_header, const struct icmphdr icmp_header)
 {
@@ -14,6 +15,7 @@ size_t   write_ping_packet_time(ping_packet_t *const pk)
     struct timeval tv;
     gettimeofday(&tv, NULL);
     memcpy(&pk->time, (void *)&tv, sizeof(struct timeval));
+
     return (sizeof(*pk));
 }
 
@@ -57,6 +59,5 @@ struct icmphdr construct_ping_icmphdr(void)
         .un.echo.sequence = sequence_count,
     };
     ++sequence_count;
-   // header.checksum = checksum((uint16_t *)&header, sizeof(header));
     return (header);
 }

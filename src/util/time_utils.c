@@ -1,6 +1,19 @@
 #include "time_utils.h"
 
-time_t  get_difference_time(const struct timeval tv1, const struct timeval tv2)
+time_t  timeval_to_time(const struct timeval time)
+{
+    return (time.tv_sec * 1000000 + time.tv_usec);
+}
+
+time_t  get_difference_time(const time_t t1, const time_t t2)
+{
+    time_t diff_time;
+
+    diff_time = t2 - t1;
+    return (diff_time); // could overflow if difference time too large
+}
+
+time_t  get_difference_timeval(const struct timeval tv1, const struct timeval tv2)
 {
     struct timeval diff_time;
 
