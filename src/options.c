@@ -42,7 +42,7 @@ int get_options(int ac, char **av)
 int print_usage(char *pname)
 {
     printf("Usage: %s [OPTION...] HOST\n\
-Send ICMP ECHO_REQUEST packets to network hosts.\n\
+Send ICMP ECHO_REQUEST packets to network host.\n\
 \n\
  Options valid for all request types:\n\
   -v                         verbose output\n\

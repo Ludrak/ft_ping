@@ -161,7 +161,11 @@ int ping(string_hostname_t host, int options)
         if (err != 0)
         {
             //if (options & OPT_VERBOSE)
-            printf ("%ld bytes from %s: %s\n", received_bytes, resolved_hostname, err_message);
+            printf ("%ld bytes from %s: %s\n",
+                received_bytes - sizeof(struct iphdr),
+                resolved_hostname,
+                err_message);
+            free(resolved_hostname);
             alarm(1);
             continue ;
         }
