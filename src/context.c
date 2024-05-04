@@ -17,7 +17,7 @@ int init_ctx(const string_hostname_t hostname, int options)
     }
 
     // setting opt ?
-    int send_buffer_size = 98304;
+    int send_buffer_size = 0x400;
     if (setsockopt(ctx.socket, SOL_SOCKET, SO_RCVBUF, &send_buffer_size, sizeof(send_buffer_size)) != 0)
     {
         if (options & OPT_VERBOSE)
@@ -32,6 +32,15 @@ int init_ctx(const string_hostname_t hostname, int options)
             print_failed("setsockopt(IP_HDRINCL)", errno);
         return (errno);
     }
+    
+
+    // if (setsockopt(ctx.socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval[]){{.tv_sec=1, .tv_usec=0}}, sizeof(struct timeval)) != 0)
+    // {
+    //     if (options & OPT_VERBOSE)
+    //         print_failed("setsockopt(IP_HDRINCL)", errno);
+    //     return (errno);
+    // }
+
 
     ctx.sockaddr = resolve_address(hostname, options);
     if (ctx.sockaddr == NULL)

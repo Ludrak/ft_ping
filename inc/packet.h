@@ -4,8 +4,8 @@
 
 #include <netinet/in.h>
 #include <netdb.h>
-#include <linux/ip.h>
-#include <linux/icmp.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
 #include <stdint.h>
 #include <memory.h>
 #include <unistd.h>

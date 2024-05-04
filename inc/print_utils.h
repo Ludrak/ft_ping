@@ -4,8 +4,8 @@
 
 #include <stdio.h>
 #include <stddef.h>
-#include <linux/icmp.h>
-#include <linux/ip.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/ip.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <sys/time.h>

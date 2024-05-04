@@ -12,8 +12,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <netdb.h>
-#include <linux/icmp.h>
-#include <linux/ip.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/ip.h>
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>

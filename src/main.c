@@ -117,11 +117,17 @@ int ping(string_hostname_t host, int options)
         ssize_t received_bytes = recvmsg(ctx.socket, &received_message, 0); 
         if (received_bytes < 0)
         {
+            if (errno == EINTR)
+            {
+                alarm (1);
+                continue ;
+            }
             if (options & OPT_VERBOSE)
                 print_failed("recvmsg()", errno);
             destroy_ctx();
             return 1;
         }
+
         // get recv time
         struct timeval now;
         gettimeofday(&now, NULL);
@@ -130,9 +136,23 @@ int ping(string_hostname_t host, int options)
         ping_packet_t received_packet;
         construct_ping_packet_from_data(&received_packet, received_message.msg_iov->iov_base, sizeof(ping_packet_t));
 
-        // add time difference data
-        time_t time_difference = get_difference_timeval(received_packet.time, now);
-        ctx_add_package_stat(time_difference);
+        // print_struct_iphdr(received_packet.ip);
+        // print_struct_icmphdr(received_packet.icmp);
+        // print_struct_timeval(received_packet.time);
+        // if (ntohs(received_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
+        // {
+        //     alarm(1);
+        //     continue ;
+        // }
+
+        if (received_packet.icmp.type == ICMP_ECHO)
+        {
+             alarm(1);
+            continue ;
+        }
+
+        // resolving host
+        char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);
 
         // check for errors in packet
         char err_message[128];
@@ -140,14 +160,15 @@ int ping(string_hostname_t host, int options)
         int err = get_packet_error(received_packet, (char*)&err_message);
         if (err != 0)
         {
-            if (options & OPT_VERBOSE)
-                printf ("error occured: %s\n", err_message);
+            //if (options & OPT_VERBOSE)
+            printf ("%ld bytes from %s: %s\n", received_bytes, resolved_hostname, err_message);
             alarm(1);
             continue ;
         }
 
-        // resolving host
-        char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);
+        // add time difference data
+        time_t time_difference = get_difference_timeval(received_packet.time, now);
+        ctx_add_package_stat(time_difference);
     
         // Print ping infos
         printf ("%zu bytes from %s: icmp_seq=%d ttl=%d time=%.3fms\n",

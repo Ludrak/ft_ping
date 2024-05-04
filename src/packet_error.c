@@ -87,23 +87,28 @@ int    get_packet_error(ping_packet_t pk, char *err_buffer)
             return (ICMP_REDIRECT);
         
         case 6: // Alternate host address
+            strcpy(err_buffer, "alternate host address");
             return (6);
         
         case ICMP_ECHO: // echo request
             return (0);
         
         case 9: // router advertisement
+            strcpy(err_buffer, "router advertisement");
             break;
     
         case 10: // router solicitation
+            strcpy(err_buffer, "router solicitation");
             break;
         
         case ICMP_TIME_EXCEEDED: // time exceeded
             switch (pk.icmp.code)
             {
                 case 0: // TTL exceeded
+                    strcpy(err_buffer, "time exceeded: time to live exceeded");
                     break;
                 case 1: // Fragment reassembly time exceeded
+                    strcpy(err_buffer, "time exceeded: fragment reassembly time exceeded");
                     break;
                 default:
                     break;
@@ -129,30 +134,39 @@ int    get_packet_error(ping_packet_t pk, char *err_buffer)
             return (ICMP_PARAMETERPROB);
         
         case ICMP_TIMESTAMP: // timestamp request
+            strcpy(err_buffer, "timestamp request");
             break;
         
         case ICMP_TIMESTAMPREPLY: // timestamp reply
+            strcpy(err_buffer, "timestamp reply");
             break;
         
         case ICMP_INFO_REQUEST: // information request
+            strcpy(err_buffer, "information request");
             break;
         
         case ICMP_INFO_REPLY: // information_reply
+            strcpy(err_buffer, "information reply");
             break;
     
         case ICMP_ADDRESS: // address mask request
+            strcpy(err_buffer, "address mask request");
             break;
         
         case ICMP_ADDRESSREPLY: // address mask reply
+            strcpy(err_buffer, "address mask reply");
             break;
         
         case 30: // information request (traceroute)
+            strcpy(err_buffer, "information request (traceroute)");
             break;
 
         case 31: // datagram conversion error
+            strcpy(err_buffer, "datagram conversion error");
             break;
         
         case 32: // mobile host redirect
+            strcpy(err_buffer, "mobile host redirect");
             break;
         
         case 33: // where are you
