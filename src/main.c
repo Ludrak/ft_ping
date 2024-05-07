@@ -198,15 +198,15 @@ int ping(string_hostname_t host, int options)
 
 int main(int ac, char **av)
 {
-    if (ac < 2)
-    {
-        fprintf (stderr, "not enought parameters, expected: ft_ping [-v?] <address>\n");
-        return (1);
-    }
-
     if (getuid() != 0)
     {
         fprintf (stderr, "this program must be run as root\n");
+        return (1);
+    }
+
+    if (ac < 2)
+    {
+        fprintf (stderr, "not enought parameters, expected: ft_ping [-v?] <address>\n");
         return (1);
     }
 
