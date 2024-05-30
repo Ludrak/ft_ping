@@ -16,15 +16,16 @@ int init_ctx(const string_hostname_t hostname, int options)
         return (errno);
     }
 
-    // setting opt ?
-    int send_buffer_size = 0x400;
-    if (setsockopt(ctx.socket, SOL_SOCKET, SO_RCVBUF, &send_buffer_size, sizeof(send_buffer_size)) != 0)
+    // setting recv buffer size 
+    int recv_buffer_size = 0x400;
+    if (setsockopt(ctx.socket, SOL_SOCKET, SO_RCVBUF, &recv_buffer_size, sizeof(recv_buffer_size)) != 0)
     {
         if (options & OPT_VERBOSE)
             print_failed("setsockopt(SO_RCVBUF)", errno);
         return (errno);
     }
 
+    // setting option to include iphdr when receiving
     int header_incl = 1;
     if (setsockopt(ctx.socket, IPPROTO_IP, IP_HDRINCL, &header_incl, sizeof(header_incl)) != 0)
     {
@@ -33,9 +34,7 @@ int init_ctx(const string_hostname_t hostname, int options)
         return (errno);
     }
 
- //   struct timeval timeout = { .tv_usec = 0, .tv_sec = 1 };
- //   setsockopt(ctx.socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
+    // resolving address from hostname
     ctx.sockaddr = resolve_address(hostname, options);
     if (ctx.sockaddr == NULL)
     {
@@ -43,6 +42,7 @@ int init_ctx(const string_hostname_t hostname, int options)
         return (1);
     }
 
+    // resolving hostname
     ctx.stats.host_addr = resolve_hostname(*ctx.sockaddr, options);
     if (!ctx.stats.host_addr)
     {
@@ -54,6 +54,8 @@ int init_ctx(const string_hostname_t hostname, int options)
     ctx.stats.packets_rtt = NULL;
     return (0);
 }
+
+
 
 int ctx_add_package_stat(const time_t rtt)
 {
@@ -79,6 +81,8 @@ int ctx_add_package_stat(const time_t rtt)
     }
     return (0);
 }
+
+
 
 void destroy_ctx()
 {

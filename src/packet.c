@@ -10,6 +10,8 @@ size_t   construct_ping_packet(ping_packet_t *const pk, const struct iphdr ip_he
     return (sizeof(*pk));
 }
 
+
+
 size_t   write_ping_packet_time(ping_packet_t *const pk)
 {
     struct timeval tv;
@@ -19,13 +21,20 @@ size_t   write_ping_packet_time(ping_packet_t *const pk)
     return (sizeof(*pk));
 }
 
+
+
 ssize_t  construct_ping_packet_from_data(ping_packet_t *const pk, const void *const data, const size_t data_size)
 {
     if (data_size > sizeof(ping_packet_t))
+    {
+        printf ("INVALID SIZE FOR CONSTRUCTING PACKET\n");
         return (sizeof(ping_packet_t) - data_size);
+    }
     memcpy(pk, data, data_size);
     return (0);
 }
+
+
 
 struct iphdr construct_ping_iphdr(const struct sockaddr_in dest_address)
 {
@@ -36,9 +45,9 @@ struct iphdr construct_ping_iphdr(const struct sockaddr_in dest_address)
         .tot_len = sizeof(ping_packet_t),
         .id = 0,
 
-        // [0]RESERVED [1]MF [2]DF [.*13]fragmentss count
+        // [0]RESERVED [1]MF [2]DF [.*13]fragments count
         .frag_off = 0,
-        .ttl = 64,
+        .ttl = 1,
         .protocol = IPPROTO_ICMP,
         .check = 0,
         .saddr = INADDR_ANY,
@@ -47,6 +56,8 @@ struct iphdr construct_ping_iphdr(const struct sockaddr_in dest_address)
     header.check = checksum((uint16_t *)&header, sizeof(header));
     return (header);
 }
+
+
 
 struct icmphdr construct_ping_icmphdr(void)
 {

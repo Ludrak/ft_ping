@@ -60,15 +60,19 @@ size_t  construct_packet()
 
 void on_alarm(int sig)
 {
+    // setting alarm for next ping 1s later
     alarm(1);
 
+    // constructing packet
     (void)sig;
     construct_packet();
     write_ping_packet_time(&ctx.packet);
-
     memset(&ctx.packet.data, '*', sizeof(ctx.packet.data));
+
+    // computing checksum
     ctx.packet.icmp.checksum = checksum((uint16_t*)&ctx.packet.icmp, sizeof(ctx.packet) - sizeof(struct iphdr));
 
+    // sending packet
     ssize_t bytes = sendto(ctx.socket, &ctx.packet, sizeof(ctx.packet), 0, SOCKADDR(ctx.sockaddr), sizeof(*ctx.sockaddr));
     if (bytes < 0)
     {
@@ -84,7 +88,6 @@ void on_alarm(int sig)
 
 int ping(string_hostname_t host, int options)
 {
-
     // initialize ctx (socket and address)
     int init_err = init_ctx(host, options);
     if (init_err != 0)
@@ -138,12 +141,19 @@ int ping(string_hostname_t host, int options)
         construct_ping_packet_from_data(&received_packet, received_message.msg_iov->iov_base, sizeof(ping_packet_t));
 
         // skip packets that are not emitted from this program
+        // printf ("\n##########################################################################\nrecv new packet on pid %hu (pid is %hu)\n", ntohs(received_packet.icmp.un.echo.id), (getpid() & 0xFFFF));
+        // print_struct_iphdr(received_packet.ip);
+        // print_struct_icmphdr(received_packet.icmp);
+        // TODO FIX: icmp error packets have a zeroed echo field, which should not be the case.
         if (ntohs(received_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
             continue;
 
         // skip echo request packets
         if (received_packet.icmp.type == ICMP_ECHO)
             continue ;
+
+
+
 
         // resolving host
         char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);

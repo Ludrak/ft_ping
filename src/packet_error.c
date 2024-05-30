@@ -68,18 +68,24 @@ int    get_packet_error(ping_packet_t pk, char *err_buffer)
             return (ICMP_DEST_UNREACH);
         
         case ICMP_SOURCE_QUENCH: // source quench | traffic congestion controll
+        {
+            strcpy(err_buffer, "source quench");
             return (ICMP_SOURCE_QUENCH);
-        
+        }
         case ICMP_REDIRECT: // redirect message
             switch (pk.icmp.code)
             {
                 case 0: // 	Redirect Datagram for the Network
+                    strcpy(err_buffer, "redirected: redirected datagram for the network");
                     break;
                 case 1: //	Redirect Datagram for the Host
+                    strcpy(err_buffer, "redirected: redirected datagram for the host");
                     break;
                 case 2: //	Redirect Datagram for the Type of Service & network
+                    strcpy(err_buffer, "redirected: redirected datagram for the type of service and network");
                     break;
                 case 3: //	Redirect Datagram for the Type of Service & host
+                    strcpy(err_buffer, "redirected: redirected datagram for the type of service and host");
                     break;
                 default:
                     break;
