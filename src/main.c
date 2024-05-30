@@ -11,9 +11,9 @@ void on_interrupt(int sig)
 {
     printf("--- %s ping statistics ---\n", ctx.stats.host_addr);
 
-    unsigned short packet_loss = 100;
+    uint16_t packet_loss = 100;
     if (ctx.stats.n_packet_recv > 0)
-        packet_loss -= (ctx.stats.n_packet_send * 100 / ctx.stats.n_packet_recv);
+        packet_loss = 100 - ((float)ctx.stats.n_packet_recv / (float)ctx.stats.n_packet_send) * 100;
     printf("%hd packets transmitted, %hd packets received, %hd%% packet loss\n", ctx.stats.n_packet_send, ctx.stats.n_packet_recv, packet_loss);
     float min_rtt = __FLT_MAX__;
     float max_rtt = -1;
@@ -60,6 +60,8 @@ size_t  construct_packet()
 
 void on_alarm(int sig)
 {
+    alarm(1);
+
     (void)sig;
     construct_packet();
     write_ping_packet_time(&ctx.packet);
@@ -119,7 +121,6 @@ int ping(string_hostname_t host, int options)
         {
             if (errno == EINTR)
             {
-                alarm (1);
                 continue ;
             }
             if (options & OPT_VERBOSE)
@@ -136,20 +137,13 @@ int ping(string_hostname_t host, int options)
         ping_packet_t received_packet;
         construct_ping_packet_from_data(&received_packet, received_message.msg_iov->iov_base, sizeof(ping_packet_t));
 
-        // print_struct_iphdr(received_packet.ip);
-        // print_struct_icmphdr(received_packet.icmp);
-        // print_struct_timeval(received_packet.time);
-        // if (ntohs(received_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
-        // {
-        //     alarm(1);
-        //     continue ;
-        // }
+        // skip packets that are not emitted from this program
+        if (ntohs(received_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
+            continue;
 
+        // skip echo request packets
         if (received_packet.icmp.type == ICMP_ECHO)
-        {
-             alarm(1);
             continue ;
-        }
 
         // resolving host
         char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);
@@ -160,13 +154,11 @@ int ping(string_hostname_t host, int options)
         int err = get_packet_error(received_packet, (char*)&err_message);
         if (err != 0)
         {
-            //if (options & OPT_VERBOSE)
             printf ("%ld bytes from %s: %s\n",
                 received_bytes - sizeof(struct iphdr),
                 resolved_hostname,
                 err_message);
             free(resolved_hostname);
-            alarm(1);
             continue ;
         }
 
@@ -183,9 +175,6 @@ int ping(string_hostname_t host, int options)
             (float)(time_difference) / 1000.0f);
         
         free (resolved_hostname);
-
-        // sending next ping through alarm handler
-        alarm(1);
     }
 
     return (0);

@@ -33,6 +33,9 @@ int init_ctx(const string_hostname_t hostname, int options)
         return (errno);
     }
 
+ //   struct timeval timeout = { .tv_usec = 0, .tv_sec = 1 };
+ //   setsockopt(ctx.socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
     ctx.sockaddr = resolve_address(hostname, options);
     if (ctx.sockaddr == NULL)
     {
