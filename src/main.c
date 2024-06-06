@@ -60,7 +60,7 @@ size_t  construct_packet()
 
 void on_alarm(int sig)
 {
-    // setting alarm for next ping 1s later
+    // setting alarm for next ping 1 second later
     alarm(1);
 
     // constructing packet
@@ -140,20 +140,9 @@ int ping(string_hostname_t host, int options)
         ping_packet_t received_packet;
         construct_ping_packet_from_data(&received_packet, received_message.msg_iov->iov_base, sizeof(ping_packet_t));
 
-        // skip packets that are not emitted from this program
-        // printf ("\n##########################################################################\nrecv new packet on pid %hu (pid is %hu)\n", ntohs(received_packet.icmp.un.echo.id), (getpid() & 0xFFFF));
-        // print_struct_iphdr(received_packet.ip);
-        // print_struct_icmphdr(received_packet.icmp);
-        // TODO FIX: icmp error packets have a zeroed echo field, which should not be the case.
-        if (ntohs(received_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
-            continue;
-
         // skip echo request packets
         if (received_packet.icmp.type == ICMP_ECHO)
             continue ;
-
-
-
 
         // resolving host
         char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);
@@ -164,6 +153,16 @@ int ping(string_hostname_t host, int options)
         int err = get_packet_error(received_packet, (char*)&err_message);
         if (err != 0)
         {
+            // retrieve original packet which caused the error
+            ping_packet_t   initial_packet;
+            uint16_t        received_packet_len = (received_packet.ip.ihl * 4) + sizeof(received_packet.icmp);
+            construct_ping_packet_from_data(&initial_packet, received_message.msg_iov->iov_base + received_packet_len, sizeof(ping_packet_t));
+
+            // skip error packets that were not emitted from a packet sent by this program
+            if (ntohs(initial_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
+                continue;
+
+            // print error
             printf ("%ld bytes from %s: %s\n",
                 received_bytes - sizeof(struct iphdr),
                 resolved_hostname,
@@ -171,6 +170,8 @@ int ping(string_hostname_t host, int options)
             free(resolved_hostname);
             continue ;
         }
+        else if (ntohs(received_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
+            continue;
 
         // add time difference data
         time_t time_difference = get_difference_timeval(received_packet.time, now);

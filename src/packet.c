@@ -40,7 +40,7 @@ struct iphdr construct_ping_iphdr(const struct sockaddr_in dest_address)
 {
     struct iphdr header = (struct iphdr){
         .version = 4,
-        .ihl = 5,
+        .ihl = sizeof(struct iphdr) / 4,
         .tos = 0,
         .tot_len = sizeof(ping_packet_t),
         .id = 0,
