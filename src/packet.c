@@ -44,10 +44,9 @@ struct iphdr construct_ping_iphdr(const struct sockaddr_in dest_address)
         .tos = 0,
         .tot_len = sizeof(ping_packet_t),
         .id = 0,
-
         // [0]RESERVED [1]MF [2]DF [.*13]fragments count
         .frag_off = 0,
-        .ttl = 1,
+        .ttl = 64,
         .protocol = IPPROTO_ICMP,
         .check = 0,
         .saddr = INADDR_ANY,
