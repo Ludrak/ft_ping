@@ -1,7 +1,55 @@
 
+
 #include "ping.h"
+#include <linux/filter.h>
 
 extern ping_ctx_t ctx;
+
+
+static int set_socket_options(int socket, int options)
+{
+    // setting recv buffer size 
+    int recv_buffer_size = 0x400;
+    if (setsockopt(socket, SOL_SOCKET, SO_RCVBUF, &recv_buffer_size, sizeof(recv_buffer_size)) != 0)
+    {
+        if (options & OPT_VERBOSE)
+            print_failed("setsockopt(SO_RCVBUF)", errno);
+        return (errno);
+    }
+
+    // setting option to include iphdr when receiving
+    int header_incl = 1;
+    if (setsockopt(socket, IPPROTO_IP, IP_HDRINCL, &header_incl, sizeof(header_incl)) != 0)
+    {
+        if (options & OPT_VERBOSE)
+            print_failed("setsockopt(IP_HDRINCL)", errno);
+        return (errno);
+    }
+
+    // setting icmp filters for filtering echo replies
+    struct icmp_filter filter;
+    filter.data = 0x1 << ICMP_ECHO;
+    if (setsockopt(socket, SOL_RAW, ICMP_FILTER, &filter, sizeof(filter)))
+    {
+        if (options & OPT_VERBOSE)
+            print_failed("setsockopt(ICMP_FILTER)", errno);
+        return (errno);
+    }
+
+    // setting reuse port, so that packets will be sent to any process listening even on the same address/port
+    int reuse_port = 1;
+    if (setsockopt(socket, SOL_SOCKET, SO_REUSEPORT, &reuse_port, sizeof(reuse_port)) != 0)
+    {
+        if (options & OPT_VERBOSE)
+            print_failed("setsockopt(SO_REUSEPORT)", errno);
+        return (errno);
+    }
+
+    return (0);
+}
+
+
+
 
 int init_ctx(const string_hostname_t hostname, int options)
 {
@@ -16,22 +64,11 @@ int init_ctx(const string_hostname_t hostname, int options)
         return (errno);
     }
 
-    // setting recv buffer size 
-    int recv_buffer_size = 0x400;
-    if (setsockopt(ctx.socket, SOL_SOCKET, SO_RCVBUF, &recv_buffer_size, sizeof(recv_buffer_size)) != 0)
+    // setting options to the socket
+    int err = set_socket_options(ctx.socket, options);
+    if (err != 0)
     {
-        if (options & OPT_VERBOSE)
-            print_failed("setsockopt(SO_RCVBUF)", errno);
-        return (errno);
-    }
-
-    // setting option to include iphdr when receiving
-    int header_incl = 1;
-    if (setsockopt(ctx.socket, IPPROTO_IP, IP_HDRINCL, &header_incl, sizeof(header_incl)) != 0)
-    {
-        if (options & OPT_VERBOSE)
-            print_failed("setsockopt(IP_HDRINCL)", errno);
-        return (errno);
+        return err; 
     }
 
     // resolving address from hostname

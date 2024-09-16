@@ -88,6 +88,8 @@ void on_alarm(int sig)
 
 int ping(string_hostname_t host, int options)
 {
+    int16_t pid = getpid();
+
     // initialize ctx (socket and address)
     int init_err = init_ctx(host, options);
     if (init_err != 0)
@@ -124,6 +126,7 @@ int ping(string_hostname_t host, int options)
         {
             if (errno == EINTR)
             {
+                printf ("packet interrupted.\n");
                 continue ;
             }
             if (options & OPT_VERBOSE)
@@ -141,8 +144,8 @@ int ping(string_hostname_t host, int options)
         construct_ping_packet_from_data(&received_packet, received_message.msg_iov->iov_base, sizeof(ping_packet_t));
 
         // skip echo request packets
-        if (received_packet.icmp.type == ICMP_ECHO)
-            continue ;
+        // if (received_packet.icmp.type == ICMP_ECHO)
+        //     continue ;
 
         // resolving host
         char *resolved_hostname = resolve_address_from_int(ctx.sockaddr->sin_family, received_packet.ip.saddr, options);
@@ -159,7 +162,7 @@ int ping(string_hostname_t host, int options)
             construct_ping_packet_from_data(&initial_packet, received_message.msg_iov->iov_base + received_packet_len, sizeof(ping_packet_t));
 
             // skip error packets that were not emitted from a packet sent by this program
-            if (ntohs(initial_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
+            if (ntohs(initial_packet.icmp.un.echo.id) != pid)
                 continue;
 
             // print error
@@ -170,8 +173,10 @@ int ping(string_hostname_t host, int options)
             free(resolved_hostname);
             continue ;
         }
-        else if (ntohs(received_packet.icmp.un.echo.id) != (getpid() & 0xFFFF))
+        else if (ntohs(received_packet.icmp.un.echo.id) != pid)
+        {
             continue;
+        }
 
         // add time difference data
         time_t time_difference = get_difference_timeval(received_packet.time, now);
